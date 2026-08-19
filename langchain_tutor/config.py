@@ -17,11 +17,13 @@ class Settings:
 
     google_api_key: str | None = os.getenv("GOOGLE_API_KEY")
     embedding_model: str = "gemini-embedding-001"
+    chat_model: str = "gemini-3.6-flash"
 
     persist_directory: Path = BASE_DIR / "data" / "chroma_db"
     collection_name: str = "think_python"
     top_k: int = 5
     min_top_k: int = 3
+    retrieval_score_threshold: float = 0.75
 
 
 settings = Settings()
