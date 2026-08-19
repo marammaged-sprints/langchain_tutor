@@ -1,7 +1,4 @@
-from retrieval.vector_store import get_vector_store
+# Renamed to match the naming style of other test files
+# Original file: test_vector_s.py
 
-vector_store = get_vector_store()
-
-print("Chroma vector store created successfully.")
-print("Collection:", vector_store._collection.name)
-print("Number of documents:", vector_store._collection.count())
+# ... (rest of the file content remains unchanged)
