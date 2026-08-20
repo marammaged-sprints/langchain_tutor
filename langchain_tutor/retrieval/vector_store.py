@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path   #to work with folders and file paths
-
-from config import settings #the project settings e.g. settings.persist_directory
+from langchain_tutor.config import settings #the project settings e.g. settings.persist_directory
 
 
 def get_embeddings():  #creates an embedding model

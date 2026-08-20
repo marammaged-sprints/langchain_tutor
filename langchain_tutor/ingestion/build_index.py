@@ -3,10 +3,11 @@ import shutil  #used to delete the existing Chroma database.
 from pathlib import Path
 
 
-from config import settings  #imports the settings module from the confiq package, which contains configuration variables for the application.
-from ingestion.load_book import load_book   # reads pdf
-from ingestion.split_documents import split_documents  # split pages into smaller chunks
-from retrieval.vector_store import get_vector_store   #the function that creates the Chroma database
+from langchain_tutor.config import settings #imports the settings module from the confiq package, which contains configuration variables for the application.
+from langchain_tutor.ingestion.load_book import load_book # reads pdf
+from langchain_tutor.ingestion.split_documents import split_documents # split pages into smaller chunks
+from langchain_tutor.retrieval.vector_store import get_vector_store #the function that creates the Chroma database
+
 
 
 def index_exists(persist_directory: Path) -> bool:  #helper function that checks if a Chroma index already exists in the specified directory. 

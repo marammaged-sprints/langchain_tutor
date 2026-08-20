@@ -1,9 +1,8 @@
 # the retriever doesnt answer the user questions but only answers --> "Which parts of the book are most relevant to this question?"
 
 from __future__ import annotations
-from config import settings
-from models import RetrievedChunk
-
+from langchain_tutor.config import settings
+from langchain_tutor.models import RetrievedChunk
 
 def retrieve(
     vector_store,   #accepts exisiting chroma database

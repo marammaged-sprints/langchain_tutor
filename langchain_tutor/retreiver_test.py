@@ -1,5 +1,5 @@
-from ingestion.build_index import build_or_load_index
-from retrieval.retriever import retrieve
+from langchain_tutor.ingestion.build_index import build_or_load_index
+from langchain_tutor.retrieval.retriever import retrieve
 
 
 vector_store, count = build_or_load_index()

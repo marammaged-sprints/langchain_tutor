@@ -1,4 +1,4 @@
-from config import settings
+from langchain_tutor.config import settings
 
 print("Book:", settings.book_path)
 print("Book exists:", settings.book_path.exists())

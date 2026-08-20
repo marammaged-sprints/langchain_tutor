@@ -2,13 +2,12 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 
 
-from models import RAGResponse
-from config import settings
-from prompts import SYSTEM_PROMPT, HUMAN_PROMPT
-from retrieval.retriever import retrieve  #relevant chunks
-from retrieval.vector_store import get_vector_store  #access chroma
-from retrieval.query_rewriter import rewrite_query
-
+from langchain_tutor.models import RAGResponse
+from langchain_tutor.config import settings
+from langchain_tutor.prompts import SYSTEM_PROMPT, HUMAN_PROMPT
+from langchain_tutor.retrieval.retriever import retrieve
+from langchain_tutor.retrieval.vector_store import get_vector_store
+from langchain_tutor.retrieval.query_rewriter import rewrite_query
 
 
 chat_model = ChatGoogleGenerativeAI(  #creates the Gemini model that will eventually generate the answer.

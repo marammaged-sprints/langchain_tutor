@@ -1,6 +1,5 @@
 import streamlit as st
-from rag_chain import run_rag
-
+from langchain_tutor.rag_chain import run_rag
 
 st.set_page_config ( page_title= "Think python Tutor", page_icon= "📘")
 st.title ("📘 Think Python Tutor")

@@ -1,4 +1,4 @@
-from retrieval.vector_store import get_embeddings
+from langchain_tutor.retrieval.vector_store import get_embeddings
 
 embeddings = get_embeddings()
 
