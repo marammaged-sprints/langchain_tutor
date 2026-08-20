@@ -2,19 +2,21 @@ from langchain_tutor.ingestion.build_index import build_or_load_index
 from langchain_tutor.retrieval.retriever import retrieve
 
 
-vector_store, count = build_or_load_index()
+def test_retriever():
+    vector_store, count = build_or_load_index()
 
-print("Indexed:", count)
+    assert count > 0
 
-results = retrieve(
-    vector_store,
-    "What is a variable in Python?"
-)
+    results = retrieve(
+        vector_store,
+        "What is a variable in Python?"
+    )
 
-for result in results:
-    print("\n---")
-    print("Chunk ID:", result.chunk_id)
-    print("Source:", result.source)
-    print("Page:", result.page)
-    print("Score:", result.score)
-    print("Content:", result.content[:300])
+    assert results
+    assert len(results) > 0
+
+    for result in results:
+        assert result.chunk_id
+        assert result.content
+        assert result.source
+        assert result.page is not None
