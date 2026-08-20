@@ -40,5 +40,21 @@ with st.chat_message("assistant"):
             history=history,
             )
     st.markdown(response.answer)
+
     if response.citations:
+            st.markdown("### 📚 Sources")
+
+            for citation in response.citations:
+                st.markdown(
+                    f"**Page {citation.page}** — "
+                    f"{citation.excerpt}"
+                )
+
+    st.session_state.messages.append(
+        {
+            "role": "assistant",
+            "content": response.answer,
+        }
+    )
+
         

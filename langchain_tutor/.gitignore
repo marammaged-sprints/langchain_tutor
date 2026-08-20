@@ -1,2 +1,4 @@
 .env
-langchain_tutor/data/
+data/
+__pycache__/
+*.pyc
