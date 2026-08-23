@@ -16,11 +16,14 @@ class Settings:
     chunk_overlap: int = 150
 
     google_api_key: str | None = os.getenv("GOOGLE_API_KEY")
-    if not google_api_key:
-        raise RuntimeError(
-        "GOOGLE_API_KEY is not set — "
-        "copy .env.example to .env and fill it in."
-    )
+    def require_api_key(self) -> str:
+        if not self.google_api_key:
+            raise RuntimeError(
+            "GOOGLE_API_KEY is not set — "
+            "copy .env.example to .env and fill it in."
+        )
+        return self.google_api_key
+    
     embedding_model: str = "gemini-embedding-001"
     chat_model: str = "gemini-3.6-flash"
 

@@ -1,17 +1,17 @@
 from __future__ import annotations
 
 from pathlib import Path   #to work with folders and file paths
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_tutor.config import settings #the project settings e.g. settings.persist_directory
 
 
-def get_embeddings():  #creates an embedding model
-    from langchain_google_genai import GoogleGenerativeAIEmbeddings   
+def get_embeddings():
+    api_key = settings.require_api_key()
 
     return GoogleGenerativeAIEmbeddings(
-        model=settings.embedding_model,   #model name from config.py
-        google_api_key=settings.google_api_key or None,
+        model=settings.embedding_model,
+        google_api_key=api_key,
     )
-
 
 def get_vector_store(persist_directory: Path | None=None):
     from langchain_chroma import Chroma  #just making Chroma available
