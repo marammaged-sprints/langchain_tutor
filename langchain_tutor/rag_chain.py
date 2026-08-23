@@ -1,8 +1,9 @@
+import logging
+
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 
-
-from langchain_tutor.models import RAGResponse
+from langchain_tutor.models import RAGResponse, RetrievedChunk
 from langchain_tutor.config import settings
 from langchain_tutor.prompts import SYSTEM_PROMPT, HUMAN_PROMPT
 from langchain_tutor.retrieval.retriever import retrieve
@@ -10,11 +11,18 @@ from langchain_tutor.retrieval.vector_store import get_vector_store
 from langchain_tutor.retrieval.query_rewriter import rewrite_query
 
 
-chat_model = ChatGoogleGenerativeAI(  #creates the Gemini model that will eventually generate the answer.
+logger = logging.getLogger(__name__)
+
+
+api_key = settings.require_api_key()
+
+chat_model = ChatGoogleGenerativeAI(
     model=settings.chat_model,
-    google_api_key=settings.google_api_key,
+    google_api_key=api_key,
 )
+
 structured_chat_model = chat_model.with_structured_output(RAGResponse)
+
 prompt = ChatPromptTemplate.from_messages(
     [
         ("system", SYSTEM_PROMPT),
@@ -22,10 +30,10 @@ prompt = ChatPromptTemplate.from_messages(
     ]
 )
 
+chain = prompt | structured_chat_model
 
-chain = prompt | structured_chat_model  #Connect prompt + structured Gemini
+vector_store = get_vector_store()
 
-vector_store = get_vector_store()   #connection to Chroma
 
 def retrieve_context(query: str):
     return retrieve(
@@ -33,6 +41,8 @@ def retrieve_context(query: str):
         query=query,
         top_k=settings.top_k,
     )
+
+
 def retrieve_for_question(question: str, history: str = ""):
     search_query = rewrite_query(
         question=question,
@@ -41,7 +51,8 @@ def retrieve_for_question(question: str, history: str = ""):
 
     return retrieve_context(search_query)
 
-def format_context(chunks):   #Take the retrieved chunks and turn them into a clean block of context for the LLM.
+
+def format_context(chunks):
     formatted_chunks = []
 
     for chunk in chunks:
@@ -52,20 +63,81 @@ def format_context(chunks):   #Take the retrieved chunks and turn them into a cl
 
     return "\n\n---\n\n".join(formatted_chunks)
 
+
 def has_relevant_context(chunks) -> bool:
     if len(chunks) < settings.min_top_k:
         return False
 
-    best_score = min(chunk.score for chunk in chunks)  #lower distance means better similarity.
+    best_score = min(chunk.score for chunk in chunks)
 
     return best_score <= settings.retrieval_score_threshold
+
+
+def verify_citations(
+    response: RAGResponse,
+    chunks: list[RetrievedChunk],
+) -> RAGResponse:
+    """
+    Verify that citations produced by the LLM actually refer
+    to chunks retrieved by our retriever.
+    """
+
+    by_id = {chunk.chunk_id: chunk for chunk in chunks}
+
+    verified_citations = []
+    dropped_citations = []
+
+    for citation in response.citations:
+        chunk = by_id.get(citation.chunk_id)
+
+        # The model cited a chunk that was never retrieved.
+        if chunk is None:
+            dropped_citations.append(citation.chunk_id)
+            continue
+
+        # Trust the retrieved chunk's metadata instead of the LLM's page number.
+        if chunk.page is not None:
+            citation.page = chunk.page
+
+        # Verify that the claimed excerpt actually exists in the retrieved chunk.
+        excerpt = citation.excerpt.strip()
+
+        if excerpt and excerpt not in chunk.content:
+            logger.warning(
+                "Invalid excerpt for citation chunk_id=%s",
+                citation.chunk_id,
+            )
+
+            citation.excerpt = chunk.content[:200]
+
+        verified_citations.append(citation)
+
+    response.citations = verified_citations
+
+    # Groundedness is computed from verified citations,
+    # rather than trusting the LLM's grounded field.
+    response.grounded = (
+        bool(verified_citations)
+        and not dropped_citations
+    )
+
+    if dropped_citations:
+        logger.warning(
+            "Dropped %d fabricated citation(s): %s",
+            len(dropped_citations),
+            dropped_citations,
+        )
+
+    return response
+
 
 def run_rag(question: str, history: str = "") -> RAGResponse:
     chunks = retrieve_for_question(
         question=question,
         history=history,
     )
-    if not has_relevant_context(chunks):   # to make sure gemini doesnt answer from his knowledge
+
+    if not has_relevant_context(chunks):
         return RAGResponse(
             answer="I can't answer that from the book.",
             query_type="out_of_scope",
@@ -74,7 +146,6 @@ def run_rag(question: str, history: str = "") -> RAGResponse:
             retrieved_chunks=len(chunks),
             refusal_reason="Not enough relevant book context was retrieved.",
         )
-
 
     context = format_context(chunks)
 
@@ -85,5 +156,4 @@ def run_rag(question: str, history: str = "") -> RAGResponse:
         }
     )
 
-    return response
-
+    return verify_citations(response, chunks)
