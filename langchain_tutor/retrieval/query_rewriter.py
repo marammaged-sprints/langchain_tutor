@@ -1,63 +1,101 @@
+import logging
+
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 
 from langchain_tutor.config import settings
 
+
+logger = logging.getLogger(__name__)
+
+
 rewriter_model = ChatGoogleGenerativeAI(
     model=settings.chat_model,
-    google_api_key=settings.google_api_key,
+    google_api_key=settings.require_api_key(),
 )
-REWRITER_PROMPT = ChatPromptTemplate.from_messages(
+
+rewriter_prompt = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            """
-You rewrite user questions into concise search queries for retrieving
-relevant passages from the book "Think Python".
+            """Rewrite the user's question into a concise search query
+for retrieving relevant information from the Think Python book.
 
-Use the conversation history only to resolve references such as:
-- it
-- this
-- that
-- them
-- the previous topic
+Use the conversation history only to resolve references such as
+"it", "this", or "that".
 
 Return only the rewritten search query.
-
 Do not answer the question.
-Do not add information that is not present in the conversation.
-""",
+Do not explain your changes.""",
         ),
         (
             "human",
-            """
-Conversation history:
+            """Conversation history:
 {history}
 
-Current user question:
-{question}
-
-Rewrite the current question into a clear search query for Think Python.
-""",
+User question:
+{question}""",
         ),
     ]
 )
-rewriter_chain = REWRITER_PROMPT | rewriter_model  #pipe the output of one component into the next.
 
-def rewrite_query(question: str, history: str = "") -> str:  #Takes the user's question and conversation history, then return an improved search query.
-    response = rewriter_chain.invoke(
-        {
-            "history": history,
-            "question": question,
-        }
-    )
 
-    content = response.content #save content
+rewriter_chain = rewriter_prompt | rewriter_model
 
-    if isinstance(content, list):  #Is Gemini's content a list?
-        return "".join(
-            block.get("text", "")  #If yes, we extract the "text" from each block
-            for block in content
-            if isinstance(block, dict)
-        ).strip()
-    return content.strip()
+
+def _extract_text(response) -> str:
+    """Extract text from the LLM response."""
+    content = getattr(response, "content", response)
+
+    if isinstance(content, str):
+        return content
+
+    if isinstance(content, list):
+        parts = []
+
+        for item in content:
+            if isinstance(item, str):
+                parts.append(item)
+            elif isinstance(item, dict) and "text" in item:
+                parts.append(item["text"])
+
+        return "".join(parts)
+
+    return str(content)
+
+
+def rewrite_query(question: str, history: str = "") -> str:
+    """Rewrite a question for retrieval, with a safe fallback."""
+
+    try:
+        response = rewriter_chain.invoke(
+            {
+                "history": history,
+                "question": question,
+            }
+        )
+
+        rewritten = _extract_text(response).strip()
+
+    except Exception:
+        logger.warning(
+            "Query rewrite failed; falling back to the raw question.",
+            exc_info=True,
+        )
+        return question
+
+    # Empty output means retrieval should use the original question.
+    if not rewritten:
+        logger.info(
+            "Query rewrite returned empty text; using the original question."
+        )
+        return question
+
+    # A rewrite should be a short search query, not a paragraph of prose.
+    if len(rewritten) > 300 or "\n" in rewritten:
+        logger.info(
+            "Rewrite looks like prose, not a query; using the original question."
+        )
+        return question
+
+    return rewritten
