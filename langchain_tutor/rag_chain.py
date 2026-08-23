@@ -64,14 +64,13 @@ def format_context(chunks):
     return "\n\n---\n\n".join(formatted_chunks)
 
 
-def has_relevant_context(chunks) -> bool:
-    if len(chunks) < settings.min_top_k:
-        return False
-
-    best_score = min(chunk.score for chunk in chunks)
-
-    return best_score <= settings.retrieval_score_threshold
-
+def select_relevant(chunks: list[RetrievedChunk]) -> list[RetrievedChunk]:
+    return [
+        chunk
+        for chunk in chunks
+        if chunk.score is not None
+        and chunk.score <= settings.retrieval_score_threshold
+    ]
 
 def verify_citations(
     response: RAGResponse,
@@ -137,17 +136,19 @@ def run_rag(question: str, history: str = "") -> RAGResponse:
         history=history,
     )
 
-    if not has_relevant_context(chunks):
+    relevant_chunks = select_relevant(chunks)
+
+    if len(relevant_chunks) < settings.min_top_k:
         return RAGResponse(
             answer="I can't answer that from the book.",
             query_type="out_of_scope",
             grounded=False,
             citations=[],
-            retrieved_chunks=len(chunks),
+            retrieved_chunks=len(relevant_chunks),
             refusal_reason="Not enough relevant book context was retrieved.",
         )
 
-    context = format_context(chunks)
+    context = format_context(relevant_chunks)
 
     response = chain.invoke(
         {
@@ -156,4 +157,4 @@ def run_rag(question: str, history: str = "") -> RAGResponse:
         }
     )
 
-    return verify_citations(response, chunks)
+    return verify_citations(response, relevant_chunks)
