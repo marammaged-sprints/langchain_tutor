@@ -6,8 +6,8 @@ from langchain_core.prompts import ChatPromptTemplate
 from models import RAGResponse, RetrievedChunk
 from config import settings
 from prompts import SYSTEM_PROMPT, HUMAN_PROMPT
+from ingestion.build_index import build_or_load_index
 from retrieval.retriever import retrieve
-from retrieval.vector_store import get_vector_store
 from retrieval.query_rewriter import rewrite_query
 
 
@@ -35,7 +35,9 @@ def get_store():
     global _vector_store
 
     if _vector_store is None:
-        _vector_store = get_vector_store()
+        # The persisted Chroma directory is intentionally not committed to Git.
+        # A fresh deployment must therefore build the index before searching it.
+        _vector_store, _ = build_or_load_index()
 
     return _vector_store
 
