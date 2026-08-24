@@ -3,8 +3,8 @@ import logging
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 
-from langchain_tutor.models import RAGResponse, RetrievedChunk
-from langchain_tutor.config import settings
+from models import RAGResponse, RetrievedChunk
+from config import settings
 from langchain_tutor.prompts import SYSTEM_PROMPT, HUMAN_PROMPT
 from langchain_tutor.retrieval.retriever import retrieve
 from langchain_tutor.retrieval.vector_store import get_vector_store
