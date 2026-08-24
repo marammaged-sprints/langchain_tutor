@@ -131,6 +131,9 @@ def verify_citations(
 
 
 def run_rag(question: str, history: str = "") -> RAGResponse:
+    if not question or not question.strip():
+        raise ValueError("run_rag requires a non-empty question")
+
     chunks = retrieve_for_question(
         question=question,
         history=history,

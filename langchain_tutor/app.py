@@ -14,46 +14,40 @@ for message in st.session_state["messages"]:
 
 question = st.chat_input("Ask a question about Think Python...")
 
-
 if question:
-    # Display the user's question immediately.
     with st.chat_message("user"):
         st.markdown(question)
 
     st.session_state.messages.append(
-        {
-            "role": "user",
-            "content": question,
-        }
+        {"role": "user", "content": question}
     )
 
-history = "\n".join(
-    f"{message['role'].title()}:{message['content']}"
-    for message in st.session_state["messages"][:-1]
-)
+    history = "\n".join(
+        f"{m['role'].title()}: {m['content']}"
+        for m in st.session_state["messages"][:-1][-6:]
+    )
 
-with st.chat_message("assistant"):
-    with st.spinner("Searching the book..."):
-        response= run_rag(      
-            question=question,
-            history=history,
+    with st.chat_message("assistant"):
+        with st.spinner("Searching the book..."):
+            response = run_rag(
+                question=question,
+                history=history,
             )
-    st.markdown(response.answer)
 
-    if response.citations:
+        st.markdown(response.answer)
+
+        if response.citations:
             st.markdown("### 📚 Sources")
 
             for citation in response.citations:
                 st.markdown(
-                    f"**Page {citation.page}** — "
-                    f"{citation.excerpt}"
+                    f"**Page {citation.page}** — {citation.excerpt}"
                 )
 
-    st.session_state.messages.append(
-        {
-            "role": "assistant",
-            "content": response.answer,
-        }
-    )
-
+        st.session_state.messages.append(
+            {
+                "role": "assistant",
+                "content": response.answer,
+            }
+        )
         
