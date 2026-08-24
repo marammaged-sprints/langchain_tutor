@@ -107,8 +107,7 @@ def verify_citations(
             dropped_citations.append(citation.chunk_id)
             continue
 
-        if chunk.page is not None:
-            citation.page = chunk.page
+        citation.page = chunk.page
 
         excerpt = citation.excerpt.strip()
 

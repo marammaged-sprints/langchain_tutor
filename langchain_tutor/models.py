@@ -20,9 +20,9 @@ class RetrievedChunk(BaseModel):
 
 
 class BookCitation(BaseModel):
-    page: int
-    excerpt: str
     chunk_id: str
+    excerpt: str
+    page: int | None = None
 
 
 
