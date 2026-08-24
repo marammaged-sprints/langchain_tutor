@@ -1,16 +1,20 @@
 import streamlit as st
 from langchain_tutor.rag_chain import run_rag
 
-st.set_page_config ( page_title= "Think python Tutor", page_icon= "📘")
-st.title ("📘 Think Python Tutor")
-st.caption ("Ask questions about Think Python and get answers grounded in the book.")
+st.set_page_config(
+    page_title="Think Python Tutor",
+    page_icon="📘",
+)
+
+st.title("📘 Think Python Tutor")
+st.caption("Ask questions about Think Python and get answers grounded in the book.")
 
 if "messages" not in st.session_state:
     st.session_state["messages"] = []
 
 for message in st.session_state["messages"]:
-    with st.chat_message(message["role"]):  #becomes "user"
-        st.markdown(message["content"])  #becomes "what is a variable?"
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
 question = st.chat_input("Ask a question about Think Python...")
 
@@ -34,20 +38,25 @@ if question:
                 history=history,
             )
 
-        st.markdown(response.answer)
+        if not response.grounded:
+            st.warning(
+                "I found relevant passages, but I couldn't verify the answer "
+                "against them. Try rephrasing the question."
+            )
+        else:
+            st.markdown(response.answer)
 
-        if response.citations:
-            st.markdown("### 📚 Sources")
+            if response.citations:
+                st.markdown("### 📚 Sources")
 
-            for citation in response.citations:
-                st.markdown(
-                    f"**Page {citation.page}** — {citation.excerpt}"
-                )
+                for citation in response.citations:
+                    st.markdown(
+                        f"**Page {citation.page}** — {citation.excerpt}"
+                    )
 
-        st.session_state.messages.append(
-            {
-                "role": "assistant",
-                "content": response.answer,
-            }
-        )
-        
+            st.session_state.messages.append(
+                {
+                    "role": "assistant",
+                    "content": response.answer,
+                }
+            )
