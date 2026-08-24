@@ -1,6 +1,9 @@
+import pytest
+
 from langchain_tutor.config import settings
 
 
+@pytest.mark.integration
 def test_config():
     assert settings.book_path.exists()
     assert settings.embedding_model

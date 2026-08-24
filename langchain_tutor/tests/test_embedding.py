@@ -1,6 +1,7 @@
+import pytest
 from langchain_tutor.retrieval.vector_store import get_embeddings
 
-
+@pytest.mark.integration
 def test_embedding():
     embeddings = get_embeddings()
 

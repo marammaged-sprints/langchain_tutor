@@ -1,8 +1,10 @@
+import pytest
 from langchain_tutor.config import settings
 from langchain_tutor.ingestion.load_book import load_book
 from langchain_tutor.ingestion.split_documents import split_documents
 
 
+@pytest.mark.integration
 def test_split_documents():
     pages = load_book(
         settings.book_path,

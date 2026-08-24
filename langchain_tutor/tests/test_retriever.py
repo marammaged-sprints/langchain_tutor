@@ -1,7 +1,10 @@
+
+import pytest
 from langchain_tutor.ingestion.build_index import build_or_load_index
 from langchain_tutor.retrieval.retriever import retrieve
 
 
+@pytest.mark.integration
 def test_retriever():
     vector_store, count = build_or_load_index()
 

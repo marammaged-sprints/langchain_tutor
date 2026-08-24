@@ -1,6 +1,8 @@
+import pytest
 from langchain_tutor.retrieval.vector_store import get_vector_store
 
 
+@pytest.mark.integration
 def test_vector_store():
     vector_store = get_vector_store()
 

@@ -9,11 +9,20 @@ from langchain_tutor.config import settings
 logger = logging.getLogger(__name__)
 
 
-rewriter_model = ChatGoogleGenerativeAI(
-    model=settings.chat_model,
-    google_api_key=settings.require_api_key(),
-    temperature=0.0,
-)
+_rewriter_model = None
+
+
+def get_rewriter_model():
+    global _rewriter_model
+
+    if _rewriter_model is None:
+        _rewriter_model = ChatGoogleGenerativeAI(
+            model=settings.chat_model,
+            google_api_key=settings.require_api_key(),
+            temperature=0.0,
+        )
+
+    return _rewriter_model
 
 rewriter_prompt = ChatPromptTemplate.from_messages(
     [
@@ -41,9 +50,6 @@ User question:
 )
 
 
-rewriter_chain = rewriter_prompt | rewriter_model
-
-
 def _extract_text(response) -> str:
     """Extract text from the LLM response."""
     content = getattr(response, "content", response)
@@ -69,6 +75,7 @@ def rewrite_query(question: str, history: str = "") -> str:
     """Rewrite a question for retrieval, with a safe fallback."""
 
     try:
+        rewriter_chain = rewriter_prompt | get_rewriter_model()
         response = rewriter_chain.invoke(
             {
                 "history": history,
