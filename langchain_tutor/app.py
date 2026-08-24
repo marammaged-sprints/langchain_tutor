@@ -1,5 +1,5 @@
 import streamlit as st
-from langchain_tutor.rag_chain import run_rag
+from rag_chain import run_rag
 
 st.set_page_config(
     page_title="Think Python Tutor",
