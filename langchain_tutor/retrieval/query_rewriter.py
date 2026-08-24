@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 rewriter_model = ChatGoogleGenerativeAI(
     model=settings.chat_model,
     google_api_key=settings.require_api_key(),
+    temperature=0.0,
 )
 
 rewriter_prompt = ChatPromptTemplate.from_messages(

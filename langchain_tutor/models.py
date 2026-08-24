@@ -1,7 +1,15 @@
 
-from pydantic import BaseModel, Field
-from typing import List, Optional
+from pydantic import BaseModel, Field, ConfigDict
+from typing import List, Optional, Literal
 
+
+
+QueryType = Literal[
+    "conceptual",
+    "code_example",
+    "definition",
+    "out_of_scope",
+]
 
 class RetrievedChunk(BaseModel):
     chunk_id: str
@@ -24,8 +32,11 @@ class RetrieverResult(BaseModel):
 
 
 class RAGResponse(BaseModel):
+
+    model_config = ConfigDict(extra="forbid")
+
     answer: str
-    query_type: str
+    query_type: QueryType
     grounded: bool
     citations: List[BookCitation] = Field(default_factory=list)
     retrieved_chunks: int

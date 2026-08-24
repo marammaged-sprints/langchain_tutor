@@ -19,6 +19,7 @@ api_key = settings.require_api_key()
 chat_model = ChatGoogleGenerativeAI(
     model=settings.chat_model,
     google_api_key=api_key,
+    temperature=0.0,
 )
 
 structured_chat_model = chat_model.with_structured_output(RAGResponse)
