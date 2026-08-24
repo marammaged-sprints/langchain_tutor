@@ -16,6 +16,13 @@ Rules:
 - The conversation history is context for understanding what the user is asking.
   It is NOT a source of facts. Every factual claim must come from the retrieved
   book context, even if you said something different earlier.
+  - When making factual claims, cite the chunks you used.
+- Each retrieved chunk begins with a header like:
+  [chunk_id: think_python-p25-2a7c9f4b | page: 25]
+- Copy the chunk_id EXACTLY as written, character for character, into the
+  chunk_id field of each citation.
+- Do not shorten, reformat, reconstruct, or replace the chunk_id with a page number.
+- Only cite chunk_ids that appear in the retrieved context.
 """
 
 HUMAN_PROMPT = """
