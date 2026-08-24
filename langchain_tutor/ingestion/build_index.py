@@ -74,3 +74,6 @@ def build_or_load_index(force_rebuild: bool= False):     # force rebuild ---> "I
     print(f"Indexed chunks: {indexed_count}")
 
     return vs, indexed_count
+
+if __name__ == "__main__":
+    build_or_load_index()

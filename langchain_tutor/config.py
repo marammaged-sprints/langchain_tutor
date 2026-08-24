@@ -31,7 +31,7 @@ class Settings:
     collection_name: str = "think_python"
     top_k: int = 5
     min_top_k: int = 3
-    retrieval_score_threshold: float = 0.75
+    retrieval_score_threshold: float = 0.35
 
 
 settings = Settings()

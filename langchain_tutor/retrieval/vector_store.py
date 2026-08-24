@@ -21,12 +21,10 @@ def get_vector_store(persist_directory: Path | None=None):
 
     return Chroma(
         collection_name=settings.collection_name,
-        embedding_function=get_embeddings(),  #calls the embedding model as iot needs this model to convert text into embeddings.
-        persist_directory=str(persist_directory), #tells chroma to save everything in the data/chroma_db
-    )
-
-
-
+        embedding_function=get_embeddings(),
+        persist_directory=str(persist_directory),
+        collection_metadata={"hnsw:space": "cosine"},
+        )
 
 
 """get_vector_store() does not add any data to the database.
