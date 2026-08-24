@@ -124,6 +124,8 @@ def verify_citations(
 
     response.citations = verified_citations
 
+    response.retrieved_chunks = len(chunks)
+
     response.grounded = (
         bool(verified_citations)
         and not dropped_citations
