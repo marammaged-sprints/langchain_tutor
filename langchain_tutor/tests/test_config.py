@@ -1,6 +1,6 @@
 import pytest
 
-from langchain_tutor.config import settings
+from config import settings
 
 
 @pytest.mark.integration

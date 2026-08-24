@@ -1,5 +1,5 @@
 import pytest
-from langchain_tutor.retrieval.vector_store import get_embeddings
+from retrieval.vector_store import get_embeddings
 
 @pytest.mark.integration
 def test_embedding():

@@ -1,7 +1,7 @@
 import pytest
 
-from langchain_tutor.models import RetrievedChunk
-from langchain_tutor.rag_chain import select_relevant, run_rag
+from models import RetrievedChunk
+from rag_chain import select_relevant, run_rag
 
 
 def test_gate_rejects_when_nothing_clears_threshold():

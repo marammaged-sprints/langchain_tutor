@@ -4,10 +4,10 @@ import shutil
 import time
 from pathlib import Path
 
-from langchain_tutor.config import settings
-from langchain_tutor.ingestion.load_book import load_book
-from langchain_tutor.ingestion.split_documents import split_documents
-from langchain_tutor.retrieval.vector_store import get_vector_store
+from config import settings
+from ingestion.load_book import load_book
+from ingestion.split_documents import split_documents
+from retrieval.vector_store import get_vector_store
 
 
 def index_exists(persist_directory: Path) -> bool:
