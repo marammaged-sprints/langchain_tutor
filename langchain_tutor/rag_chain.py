@@ -14,15 +14,31 @@ from langchain_tutor.retrieval.query_rewriter import rewrite_query
 logger = logging.getLogger(__name__)
 
 
-api_key = settings.require_api_key()
+_chat_model = None
+_vector_store = None
 
-chat_model = ChatGoogleGenerativeAI(
-    model=settings.chat_model,
-    google_api_key=api_key,
-    temperature=0.0,
-)
 
-structured_chat_model = chat_model.with_structured_output(RAGResponse)
+def get_chat_model():
+    global _chat_model
+
+    if _chat_model is None:
+        _chat_model = ChatGoogleGenerativeAI(
+            model=settings.chat_model,
+            google_api_key=settings.require_api_key(),
+            temperature=0.0,
+        ).with_structured_output(RAGResponse)
+
+    return _chat_model
+
+
+def get_store():
+    global _vector_store
+
+    if _vector_store is None:
+        _vector_store = get_vector_store()
+
+    return _vector_store
+
 
 prompt = ChatPromptTemplate.from_messages(
     [
@@ -31,14 +47,10 @@ prompt = ChatPromptTemplate.from_messages(
     ]
 )
 
-chain = prompt | structured_chat_model
-
-vector_store = get_vector_store()
-
 
 def retrieve_context(query: str):
     return retrieve(
-        vector_store=vector_store,
+        vector_store=get_store(),
         query=query,
         top_k=settings.top_k,
     )
@@ -73,6 +85,7 @@ def select_relevant(chunks: list[RetrievedChunk]) -> list[RetrievedChunk]:
         and chunk.score <= settings.retrieval_score_threshold
     ]
 
+
 def verify_citations(
     response: RAGResponse,
     chunks: list[RetrievedChunk],
@@ -90,16 +103,13 @@ def verify_citations(
     for citation in response.citations:
         chunk = by_id.get(citation.chunk_id)
 
-        # The model cited a chunk that was never retrieved.
         if chunk is None:
             dropped_citations.append(citation.chunk_id)
             continue
 
-        # Trust the retrieved chunk's metadata instead of the LLM's page number.
         if chunk.page is not None:
             citation.page = chunk.page
 
-        # Verify that the claimed excerpt actually exists in the retrieved chunk.
         excerpt = citation.excerpt.strip()
 
         if excerpt and excerpt not in chunk.content:
@@ -114,8 +124,6 @@ def verify_citations(
 
     response.citations = verified_citations
 
-    # Groundedness is computed from verified citations,
-    # rather than trusting the LLM's grounded field.
     response.grounded = (
         bool(verified_citations)
         and not dropped_citations
@@ -153,6 +161,8 @@ def run_rag(question: str, history: str = "") -> RAGResponse:
         )
 
     context = format_context(relevant_chunks)
+
+    chain = prompt | get_chat_model()
 
     response = chain.invoke({
         "question": question,
