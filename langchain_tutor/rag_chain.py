@@ -5,10 +5,10 @@ from langchain_core.prompts import ChatPromptTemplate
 
 from models import RAGResponse, RetrievedChunk
 from config import settings
-from langchain_tutor.prompts import SYSTEM_PROMPT, HUMAN_PROMPT
-from langchain_tutor.retrieval.retriever import retrieve
-from langchain_tutor.retrieval.vector_store import get_vector_store
-from langchain_tutor.retrieval.query_rewriter import rewrite_query
+from prompts import SYSTEM_PROMPT, HUMAN_PROMPT
+from retrieval.retriever import retrieve
+from retrieval.vector_store import get_vector_store
+from retrieval.query_rewriter import rewrite_query
 
 
 logger = logging.getLogger(__name__)
