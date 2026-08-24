@@ -13,9 +13,15 @@ Rules:
   the question, say that you cannot answer from the provided book context.
 - Keep the explanation clear and appropriate for a learner.
 - When making factual claims, provide citations to the relevant book chunks.
+- The conversation history is context for understanding what the user is asking.
+  It is NOT a source of facts. Every factual claim must come from the retrieved
+  book context, even if you said something different earlier.
 """
 
 HUMAN_PROMPT = """
+Conversation so far:
+{history}
+
 User question:
 {question}
 
@@ -24,4 +30,3 @@ Retrieved book context:
 
 Answer the user's question using only the retrieved book context.
 """
-

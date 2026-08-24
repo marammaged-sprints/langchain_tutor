@@ -154,11 +154,10 @@ def run_rag(question: str, history: str = "") -> RAGResponse:
 
     context = format_context(relevant_chunks)
 
-    response = chain.invoke(
-        {
-            "question": question,
-            "context": context,
-        }
-    )
+    response = chain.invoke({
+        "question": question,
+        "context": context,
+        "history": history or "(no previous turns)",
+    })
 
     return verify_citations(response, relevant_chunks)
