@@ -1,7 +1,7 @@
-
 from __future__ import annotations
 
-import shutil  # used to delete the existing Chroma database.
+import shutil
+import time
 from pathlib import Path
 
 from langchain_tutor.config import settings
@@ -85,8 +85,45 @@ def build_or_load_index(force_rebuild: bool = False):
 
     print("Building Chroma index...")
 
-    # Add the chunks to Chroma and create their embeddings.
-    vs.add_documents(chunks)
+    batch_size = 100
+
+    for start in range(0, len(chunks), batch_size):
+        batch = chunks[start:start + batch_size]
+
+        batch_ids = [
+            chunk.metadata["chunk_id"]
+            for chunk in batch
+        ]
+
+        for attempt in range(3):
+            try:
+                vs.add_documents(
+                    batch,
+                    ids=batch_ids,
+                )
+                break
+
+            except Exception:
+                if attempt == 2:
+                    raise
+
+                wait_time = 2 ** attempt
+
+                print(
+                    f"  Batch failed. "
+                    f"Retrying in {wait_time} seconds..."
+                )
+
+                time.sleep(wait_time)
+
+        indexed_so_far = min(
+            start + batch_size,
+            len(chunks),
+        )
+
+        print(
+            f"  Indexed {indexed_so_far}/{len(chunks)} chunks"
+        )
 
     indexed_count = vs._collection.count()
 
