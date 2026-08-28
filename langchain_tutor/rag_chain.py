@@ -1,4 +1,6 @@
 import logging
+from time import perf_counter
+from typing import Any
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -58,13 +60,35 @@ def retrieve_context(query: str):
     )
 
 
-def retrieve_for_question(question: str, history: str = ""):
+def retrieve_for_question(
+    question: str,
+    history: str = "",
+    trace: dict[str, Any] | None = None,
+):
+    rewrite_started = perf_counter()
     search_query = rewrite_query(
         question=question,
         history=history,
     )
+    rewrite_seconds = perf_counter() - rewrite_started
 
-    return retrieve_context(search_query)
+    retrieval_started = perf_counter()
+    chunks = retrieve_context(search_query)
+    retrieval_seconds = perf_counter() - retrieval_started
+
+    if trace is not None:
+        trace["search_query"] = search_query
+        trace["retrieved_chunks"] = [
+            chunk.model_dump(mode="json") for chunk in chunks
+        ]
+        trace.setdefault("timings_seconds", {}).update(
+            {
+                "query_rewrite": round(rewrite_seconds, 4),
+                "retrieval": round(retrieval_seconds, 4),
+            }
+        )
+
+    return chunks
 
 
 def format_context(chunks):
@@ -142,19 +166,29 @@ def verify_citations(
     return response
 
 
-def run_rag(question: str, history: str = "") -> RAGResponse:
+def run_rag(
+    question: str,
+    history: str = "",
+    trace: dict[str, Any] | None = None,
+) -> RAGResponse:
     if not question or not question.strip():
         raise ValueError("run_rag requires a non-empty question")
 
+    total_started = perf_counter()
     chunks = retrieve_for_question(
         question=question,
         history=history,
+        trace=trace,
     )
 
     relevant_chunks = select_relevant(chunks)
+    if trace is not None:
+        trace["relevant_chunks"] = [
+            chunk.model_dump(mode="json") for chunk in relevant_chunks
+        ]
 
     if len(relevant_chunks) < settings.min_top_k:
-        return RAGResponse(
+        response = RAGResponse(
             answer="I can't answer that from the book.",
             query_type="out_of_scope",
             grounded=False,
@@ -162,15 +196,33 @@ def run_rag(question: str, history: str = "") -> RAGResponse:
             retrieved_chunks=len(relevant_chunks),
             refusal_reason="Not enough relevant book context was retrieved.",
         )
+        if trace is not None:
+            trace.setdefault("timings_seconds", {})["generation"] = 0.0
+            trace["timings_seconds"]["total"] = round(
+                perf_counter() - total_started,
+                4,
+            )
+        return response
 
     context = format_context(relevant_chunks)
 
     chain = prompt | get_chat_model()
 
+    generation_started = perf_counter()
     response = chain.invoke({
         "question": question,
         "context": context,
         "history": history or "(no previous turns)",
     })
+    generation_seconds = perf_counter() - generation_started
 
-    return verify_citations(response, relevant_chunks)
+    response = verify_citations(response, relevant_chunks)
+    if trace is not None:
+        trace.setdefault("timings_seconds", {}).update(
+            {
+                "generation": round(generation_seconds, 4),
+                "total": round(perf_counter() - total_started, 4),
+            }
+        )
+
+    return response
