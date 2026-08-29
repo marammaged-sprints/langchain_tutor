@@ -56,11 +56,43 @@ Run commands from the repository root so Python can import `langchain_tutor` as
 a package:
 
 ```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 ```
 
-Copy `langchain_tutor/.env.example` to `langchain_tutor/.env` and add your
-Google API key.
+On macOS or Linux, activate the environment with
+`source .venv/bin/activate` instead.
+
+Copy the example environment file:
+
+```powershell
+Copy-Item langchain_tutor/.env.example langchain_tutor/.env
+```
+
+Then add your Google Gemini API key to `langchain_tutor/.env`:
+
+```ini
+GOOGLE_API_KEY=your-key-here
+```
+
+You can create a key in [Google AI Studio](https://aistudio.google.com/apikey).
+
+## Build the index
+
+Build the vector index once before starting the app:
+
+```powershell
+python -m langchain_tutor.ingestion.build_index
+```
+
+This reads `langchain_tutor/data/think_python.pdf`, splits and embeds its text,
+and writes the Chroma store to `langchain_tutor/data/chroma_db/`. It can take a
+few minutes and prints progress for each batch. Re-running the command is safe:
+a complete index is reused, while an incomplete index is rebuilt.
+
+Building it explicitly prevents the first question in a fresh deployment from
+having to wait while the index is created.
 
 ## Run the Streamlit app
 
@@ -74,8 +106,16 @@ imports for the application, tests, and command-line modules.
 
 ## Run tests
 
+Run the fast suite without external API calls:
+
 ```powershell
-python -m pytest -m "not integration"
+python -m pytest langchain_tutor/tests -m "not integration"
+```
+
+Run the complete suite after configuring `GOOGLE_API_KEY`:
+
+```powershell
+python -m pytest langchain_tutor/tests
 ```
 
 ## Inspect document chunks
