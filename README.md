@@ -77,3 +77,12 @@ imports for the application, tests, and command-line modules.
 ```powershell
 python -m pytest -m "not integration"
 ```
+
+## Inspect document chunks
+
+The chunk inspection utility is kept outside the application package. Run it
+as a module from the repository root:
+
+```powershell
+python -m scripts.check_chunks
+```
