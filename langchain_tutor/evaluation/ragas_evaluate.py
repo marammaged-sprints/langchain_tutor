@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import importlib.util
 import json
 import math
 import os
@@ -9,11 +10,10 @@ import statistics
 import sys
 import time
 import types
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-
-from langchain_google_genai import ChatGoogleGenerativeAI
 
 from langchain_tutor.config import settings
 from langchain_tutor.evaluation.evaluation_prompt import (
@@ -74,18 +74,55 @@ def _install_ragas_vertexai_compatibility() -> None:
         sys.modules[module_name] = compatibility_module
 
 
-_install_ragas_vertexai_compatibility()
-
-from ragas.dataset_schema import SingleTurnSample  # noqa: E402
-from ragas.llms import LangchainLLMWrapper  # noqa: E402
-from ragas.metrics import (  # noqa: E402
-    Faithfulness,
-    LLMContextPrecisionWithoutReference,
-    RubricsScore,
-)
-
-
 _metrics: dict[str, Any] | None = None
+
+
+@dataclass(frozen=True)
+class _FallbackSingleTurnSample:
+    """Duck-typed sample used only with injected metrics in unit tests."""
+
+    user_input: str
+    response: str
+    retrieved_contexts: list[str]
+
+
+def _missing_ragas(exc: ModuleNotFoundError) -> bool:
+    return bool(exc.name and (
+        exc.name == "ragas" or exc.name.startswith("ragas.")
+    ))
+
+
+def _ragas_available() -> bool:
+    try:
+        return importlib.util.find_spec("ragas") is not None
+    except ModuleNotFoundError as exc:
+        if _missing_ragas(exc):
+            return False
+        raise
+
+
+def _ragas_install_error() -> RuntimeError:
+    return RuntimeError(
+        "Ragas evaluation requires the optional 'ragas' package. "
+        "Install the project evaluation dependencies with "
+        "'python -m pip install -r requirements.txt'."
+    )
+
+
+def _create_single_turn_sample(**values: Any) -> Any:
+    """Create a Ragas sample lazily, with a test-only fallback if absent."""
+    if not _ragas_available():
+        return _FallbackSingleTurnSample(**values)
+
+    _install_ragas_vertexai_compatibility()
+    try:
+        from ragas.dataset_schema import SingleTurnSample
+    except ModuleNotFoundError as exc:
+        if not _missing_ragas(exc):
+            raise
+        return _FallbackSingleTurnSample(**values)
+
+    return SingleTurnSample(**values)
 
 
 def get_ragas_metrics() -> dict[str, Any]:
@@ -94,6 +131,23 @@ def get_ragas_metrics() -> dict[str, Any]:
     global _metrics
 
     if _metrics is None:
+        if not _ragas_available():
+            raise _ragas_install_error()
+
+        _install_ragas_vertexai_compatibility()
+        try:
+            from langchain_google_genai import ChatGoogleGenerativeAI
+            from ragas.llms import LangchainLLMWrapper
+            from ragas.metrics import (
+                Faithfulness,
+                LLMContextPrecisionWithoutReference,
+                RubricsScore,
+            )
+        except ModuleNotFoundError as exc:
+            if not _missing_ragas(exc):
+                raise
+            raise _ragas_install_error() from exc
+
         judge = ChatGoogleGenerativeAI(
             model=settings.chat_model,
             google_api_key=settings.require_api_key(),
@@ -292,7 +346,7 @@ def behavior_passed(record: dict[str, Any]) -> bool:
 
 async def _score_metric_with_retries(
     metric: Any,
-    sample: SingleTurnSample,
+    sample: Any,
     attempts: int,
     retry_delay: float,
     metric_timeout: float,
@@ -333,7 +387,7 @@ async def evaluate_record_async(
     """Evaluate one answer turn using Ragas plus measured latency."""
 
     contexts = record["retrieved_contexts"]
-    sample = SingleTurnSample(
+    sample = _create_single_turn_sample(
         user_input=build_evaluation_question(record),
         response=record["answer"],
         retrieved_contexts=contexts,

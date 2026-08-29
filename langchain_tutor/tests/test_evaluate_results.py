@@ -1,3 +1,6 @@
+import subprocess
+import sys
+
 from langchain_tutor.evaluation.ragas_evaluate import (
     behavior_passed,
     evaluate_record,
@@ -6,6 +9,44 @@ from langchain_tutor.evaluation.ragas_evaluate import (
     score_response_time,
     summarize,
 )
+
+
+def test_evaluation_module_imports_when_ragas_is_unavailable():
+    script = """
+import importlib.abc
+import sys
+
+class BlockRagas(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path, target=None):
+        if fullname == "ragas" or fullname.startswith("ragas."):
+            raise ModuleNotFoundError(
+                "blocked optional dependency",
+                name=fullname,
+            )
+        return None
+
+sys.meta_path.insert(0, BlockRagas())
+from langchain_tutor.evaluation.ragas_evaluate import (
+    get_ragas_metrics,
+    normalize_rubric_score,
+)
+assert normalize_rubric_score(5) == 1.0
+try:
+    get_ragas_metrics()
+except RuntimeError as exc:
+    assert "optional 'ragas' package" in str(exc)
+else:
+    raise AssertionError("missing Ragas should produce a clear runtime error")
+"""
+
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
 
 
 class FakeMetric:
