@@ -5,12 +5,13 @@ tutor.
 
 ## 1. Generate answers for the 100 cases
 
-Run from the `langchain_tutor` directory:
+Run from the repository root:
 
 ```powershell
-.\venv\Scripts\python.exe -m evaluation.run_questions `
-  evaluation\questions.txt `
-  --output json\question_answers.json `
+.\langchain_tutor\venv\Scripts\python.exe `
+  -m langchain_tutor.evaluation.run_questions `
+  langchain_tutor\evaluation\questions.txt `
+  --output langchain_tutor\json\question_answers.json `
   --fresh
 ```
 
@@ -31,9 +32,10 @@ only missing or failed cases are run again.
 ## 2. Evaluate the saved answers with Ragas
 
 ```powershell
-.\venv\Scripts\python.exe -m evaluation.ragas_evaluate `
-  json\question_answers.json `
-  --output json\ragas_evaluation.json `
+.\langchain_tutor\venv\Scripts\python.exe `
+  -m langchain_tutor.evaluation.ragas_evaluate `
+  langchain_tutor\json\question_answers.json `
+  --output langchain_tutor\json\ragas_evaluation.json `
   --fresh
 ```
 
@@ -58,8 +60,9 @@ average is available, pass it explicitly. The resulting rows are marked
 `fallback_average` so they cannot be confused with per-turn measurements:
 
 ```powershell
-.\venv\Scripts\python.exe -m evaluation.ragas_evaluate `
-  json\question_answers.json `
+.\langchain_tutor\venv\Scripts\python.exe `
+  -m langchain_tutor.evaluation.ragas_evaluate `
+  langchain_tutor\json\question_answers.json `
   --fallback-response-time 11.05
 ```
 

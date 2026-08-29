@@ -1,4 +1,7 @@
-from evaluation.run_questions import looks_like_refusal, parse_question_cases
+from langchain_tutor.evaluation.run_questions import (
+    looks_like_refusal,
+    parse_question_cases,
+)
 
 
 def test_parses_direct_and_conversational_cases():

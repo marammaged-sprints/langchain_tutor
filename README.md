@@ -48,3 +48,32 @@ Gemini Chat Model
  â”‚
  â–¼
 Grounded Answer
+```
+
+## Setup
+
+Run commands from the repository root so Python can import `langchain_tutor` as
+a package:
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
+Copy `langchain_tutor/.env.example` to `langchain_tutor/.env` and add your
+Google API key.
+
+## Run the Streamlit app
+
+```powershell
+streamlit run streamlit_app.py
+```
+
+For Streamlit Community Cloud, set the main file path to `streamlit_app.py`.
+The root entry point imports `langchain_tutor.app`, preserving normal package
+imports for the application, tests, and command-line modules.
+
+## Run tests
+
+```powershell
+python -m pytest -m "not integration"
+```

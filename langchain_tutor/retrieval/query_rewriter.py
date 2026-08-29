@@ -3,7 +3,7 @@ import logging
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 
-from config import settings
+from langchain_tutor.config import settings
 
 
 logger = logging.getLogger(__name__)

@@ -5,12 +5,12 @@ from typing import Any
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 
-from models import RAGResponse, RetrievedChunk
-from config import settings
-from prompts import SYSTEM_PROMPT, HUMAN_PROMPT
-from ingestion.build_index import build_or_load_index
-from retrieval.retriever import retrieve
-from retrieval.query_rewriter import rewrite_query
+from langchain_tutor.config import settings
+from langchain_tutor.ingestion.build_index import build_or_load_index
+from langchain_tutor.models import RAGResponse, RetrievedChunk
+from langchain_tutor.prompts import HUMAN_PROMPT, SYSTEM_PROMPT
+from langchain_tutor.retrieval.query_rewriter import rewrite_query
+from langchain_tutor.retrieval.retriever import retrieve
 
 
 logger = logging.getLogger(__name__)

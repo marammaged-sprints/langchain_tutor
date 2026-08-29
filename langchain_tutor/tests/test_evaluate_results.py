@@ -1,4 +1,4 @@
-from evaluation.ragas_evaluate import (
+from langchain_tutor.evaluation.ragas_evaluate import (
     behavior_passed,
     evaluate_record,
     normalize_rubric_score,

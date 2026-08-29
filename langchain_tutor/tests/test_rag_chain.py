@@ -1,8 +1,8 @@
 import pytest
 
-import rag_chain
-from models import RetrievedChunk
-from rag_chain import get_store, select_relevant, run_rag
+from langchain_tutor import rag_chain
+from langchain_tutor.models import RetrievedChunk
+from langchain_tutor.rag_chain import get_store, select_relevant, run_rag
 
 
 def test_get_store_builds_or_loads_index(monkeypatch):

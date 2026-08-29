@@ -1,5 +1,5 @@
 import pytest
-from ingestion.build_index import build_or_load_index
+from langchain_tutor.ingestion.build_index import build_or_load_index
 
 
 @pytest.mark.integration

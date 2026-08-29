@@ -1,5 +1,5 @@
 import pytest
-from retrieval.vector_store import get_vector_store
+from langchain_tutor.retrieval.vector_store import get_vector_store
 
 
 @pytest.mark.integration

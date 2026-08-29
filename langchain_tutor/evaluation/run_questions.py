@@ -8,8 +8,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from config import settings
-from rag_chain import run_rag
+from langchain_tutor.config import settings
+from langchain_tutor.rag_chain import run_rag
 
 
 SECTION_NAMES = {

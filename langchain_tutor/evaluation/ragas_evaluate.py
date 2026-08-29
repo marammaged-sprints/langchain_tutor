@@ -15,8 +15,8 @@ from typing import Any
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-from config import settings
-from evaluation.evaluation_prompt import (
+from langchain_tutor.config import settings
+from langchain_tutor.evaluation.evaluation_prompt import (
     COMPLETENESS_RUBRICS,
     CORRECTNESS_RUBRICS,
     EVALUATION_PROMPT_VERSION,
