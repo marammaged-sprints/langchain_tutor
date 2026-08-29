@@ -6,6 +6,10 @@ from langchain_tutor.rag_chain import run_rag
 
 def render_refusal(response: RAGResponse) -> bool:
     """Render a refusal state and report whether the response was handled."""
+    if response.refusal_reason == "Generation failed.":
+        st.error(response.answer)
+        return True
+
     if response.query_type == "out_of_scope":
         st.markdown(response.answer)
         return True

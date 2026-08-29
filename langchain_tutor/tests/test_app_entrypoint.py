@@ -62,3 +62,30 @@ def test_ungrounded_in_scope_response_displays_verification_warning(monkeypatch)
         "I found relevant passages, but I couldn't verify the answer "
         "against them. Try rephrasing the question."
     ]
+
+
+def test_generation_failure_displays_its_own_error(monkeypatch):
+    error_messages = []
+    markdown_messages = []
+    warning_messages = []
+    monkeypatch.setattr(tutor_app.st, "error", error_messages.append)
+    monkeypatch.setattr(tutor_app.st, "markdown", markdown_messages.append)
+    monkeypatch.setattr(tutor_app.st, "warning", warning_messages.append)
+
+    response = RAGResponse(
+        answer=(
+            "Something went wrong while generating the answer. "
+            "Please try again."
+        ),
+        query_type="out_of_scope",
+        grounded=False,
+        retrieved_chunks=3,
+        refusal_reason="Generation failed.",
+    )
+
+    handled = tutor_app.render_refusal(response)
+
+    assert handled is True
+    assert error_messages == [response.answer]
+    assert markdown_messages == []
+    assert warning_messages == []

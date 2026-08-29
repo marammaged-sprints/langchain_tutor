@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 
 from langchain_tutor import rag_chain
@@ -39,6 +41,60 @@ def test_gate_rejects_when_nothing_clears_threshold():
     ]
 
     assert select_relevant(chunks) == []
+
+
+def test_generation_failure_returns_safe_response(monkeypatch, caplog):
+    chunks = [
+        RetrievedChunk(
+            chunk_id=f"c{i}",
+            content="Relevant Python content.",
+            source="Think Python",
+            page=i + 1,
+            score=0.1,
+        )
+        for i in range(3)
+    ]
+
+    class FailingChain:
+        def invoke(self, _inputs):
+            raise RuntimeError("invalid structured model output")
+
+    class FailingPrompt:
+        def __or__(self, _model):
+            return FailingChain()
+
+    monkeypatch.setattr(
+        rag_chain,
+        "retrieve_for_question",
+        lambda question, history, trace: chunks,
+    )
+    monkeypatch.setattr(rag_chain, "prompt", FailingPrompt())
+    monkeypatch.setattr(rag_chain, "get_chat_model", lambda: object())
+
+    trace = {}
+    with caplog.at_level(logging.ERROR, logger=rag_chain.__name__):
+        response = run_rag("What is a Python variable?", trace=trace)
+
+    assert response == rag_chain.RAGResponse(
+        answer=(
+            "Something went wrong while generating the answer. "
+            "Please try again."
+        ),
+        query_type="out_of_scope",
+        grounded=False,
+        citations=[],
+        retrieved_chunks=3,
+        refusal_reason="Generation failed.",
+    )
+    assert trace["timings_seconds"]["generation"] >= 0
+    assert trace["timings_seconds"]["total"] >= 0
+
+    log_record = next(
+        record
+        for record in caplog.records
+        if record.getMessage() == "Structured generation failed"
+    )
+    assert log_record.exc_info is not None
 
 
 @pytest.mark.integration

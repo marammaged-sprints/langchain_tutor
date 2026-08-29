@@ -206,14 +206,38 @@ def run_rag(
 
     context = format_context(relevant_chunks)
 
-    chain = prompt | get_chat_model()
-
     generation_started = perf_counter()
-    response = chain.invoke({
-        "question": question,
-        "context": context,
-        "history": history or "(no previous turns)",
-    })
+    try:
+        chain = prompt | get_chat_model()
+        response = chain.invoke({
+            "question": question,
+            "context": context,
+            "history": history or "(no previous turns)",
+        })
+    except Exception:
+        generation_seconds = perf_counter() - generation_started
+        logger.exception("Structured generation failed")
+
+        response = RAGResponse(
+            answer=(
+                "Something went wrong while generating the answer. "
+                "Please try again."
+            ),
+            query_type="out_of_scope",
+            grounded=False,
+            citations=[],
+            retrieved_chunks=len(relevant_chunks),
+            refusal_reason="Generation failed.",
+        )
+        if trace is not None:
+            trace.setdefault("timings_seconds", {}).update(
+                {
+                    "generation": round(generation_seconds, 4),
+                    "total": round(perf_counter() - total_started, 4),
+                }
+            )
+        return response
+
     generation_seconds = perf_counter() - generation_started
 
     response = verify_citations(response, relevant_chunks)
