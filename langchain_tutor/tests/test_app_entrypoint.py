@@ -2,7 +2,9 @@ from pathlib import Path
 
 from streamlit.testing.v1 import AppTest
 
+from langchain_tutor import app as tutor_app
 from langchain_tutor.app import main
+from langchain_tutor.models import RAGResponse
 
 
 def test_package_app_exposes_main():
@@ -15,3 +17,48 @@ def test_root_streamlit_entrypoint_starts_without_error():
     app = AppTest.from_file(entrypoint).run(timeout=30)
 
     assert not app.exception
+
+
+def test_out_of_scope_response_displays_the_gate_refusal(monkeypatch):
+    markdown_messages = []
+    warning_messages = []
+    monkeypatch.setattr(tutor_app.st, "markdown", markdown_messages.append)
+    monkeypatch.setattr(tutor_app.st, "warning", warning_messages.append)
+
+    response = RAGResponse(
+        answer="I can't answer that from the book.",
+        query_type="out_of_scope",
+        grounded=False,
+        retrieved_chunks=0,
+        refusal_reason="Not enough relevant book context was retrieved.",
+    )
+
+    handled = tutor_app.render_refusal(response)
+
+    assert handled is True
+    assert markdown_messages == ["I can't answer that from the book."]
+    assert warning_messages == []
+
+
+def test_ungrounded_in_scope_response_displays_verification_warning(monkeypatch):
+    markdown_messages = []
+    warning_messages = []
+    monkeypatch.setattr(tutor_app.st, "markdown", markdown_messages.append)
+    monkeypatch.setattr(tutor_app.st, "warning", warning_messages.append)
+
+    response = RAGResponse(
+        answer="An answer that could not be verified.",
+        query_type="conceptual",
+        grounded=False,
+        retrieved_chunks=3,
+        refusal_reason="The answer was not supported by the retrieved context.",
+    )
+
+    handled = tutor_app.render_refusal(response)
+
+    assert handled is True
+    assert markdown_messages == []
+    assert warning_messages == [
+        "I found relevant passages, but I couldn't verify the answer "
+        "against them. Try rephrasing the question."
+    ]

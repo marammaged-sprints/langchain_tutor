@@ -1,5 +1,23 @@
 import streamlit as st
+
+from langchain_tutor.models import RAGResponse
 from langchain_tutor.rag_chain import run_rag
+
+
+def render_refusal(response: RAGResponse) -> bool:
+    """Render a refusal state and report whether the response was handled."""
+    if response.query_type == "out_of_scope":
+        st.markdown(response.answer)
+        return True
+
+    if not response.grounded:
+        st.warning(
+            "I found relevant passages, but I couldn't verify the answer "
+            "against them. Try rephrasing the question."
+        )
+        return True
+
+    return False
 
 
 def main() -> None:
@@ -42,12 +60,7 @@ def main() -> None:
                     history=history,
                 )
 
-            if not response.grounded:
-                st.warning(
-                    "I found relevant passages, but I couldn't verify the answer "
-                    "against them. Try rephrasing the question."
-                )
-            else:
+            if not render_refusal(response):
                 st.markdown(response.answer)
 
                 if response.citations:
