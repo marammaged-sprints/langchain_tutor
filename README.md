@@ -139,6 +139,15 @@ The command reports the current gate's in-scope acceptance and out-of-scope
 refusal counts, then recommends the threshold with the best balanced accuracy
 for the current `min_top_k`. Lower Chroma distance scores are more relevant.
 
+## Runtime retrieval diagnostics
+
+Each Streamlit question writes one INFO log record containing the original and
+rewritten queries, retrieved and relevant chunk counts, distance scores, gate
+settings, verified citation count, and final outcome. Outcomes distinguish
+retrieval refusals, model refusals, generation failures, unverified answers,
+and grounded answers. Streamlit displays these records in its server logs; no
+book context or generated answer text is included.
+
 ## Inspect document chunks
 
 The chunk inspection utility is kept outside the application package. Run it

@@ -112,6 +112,52 @@ def select_relevant(chunks: list[RetrievedChunk]) -> list[RetrievedChunk]:
     ]
 
 
+def _rag_outcome(
+    response: RAGResponse,
+    retrieval_gate_passed: bool,
+) -> str:
+    if not retrieval_gate_passed:
+        return "retrieval_refused"
+    if response.refusal_reason == "Generation failed.":
+        return "generation_failed"
+    if response.grounded:
+        return "answered"
+    if response.query_type == "out_of_scope":
+        return "model_refused"
+    return "unverified"
+
+
+def _log_rag_result(
+    *,
+    question: str,
+    search_query: str,
+    chunks: list[RetrievedChunk],
+    relevant_chunks: list[RetrievedChunk],
+    response: RAGResponse,
+    retrieval_gate_passed: bool,
+) -> None:
+    scores = [
+        round(chunk.score, 3) if chunk.score is not None else None
+        for chunk in chunks
+    ]
+    logger.info(
+        "rag question=%r rewritten=%r retrieved=%d relevant=%d "
+        "min_top_k=%d threshold=%.3f scores=%s citations=%d "
+        "grounded=%s outcome=%s refusal_reason=%r",
+        question,
+        search_query,
+        len(chunks),
+        len(relevant_chunks),
+        settings.min_top_k,
+        settings.retrieval_score_threshold,
+        scores,
+        len(response.citations),
+        response.grounded,
+        _rag_outcome(response, retrieval_gate_passed),
+        response.refusal_reason,
+    )
+
+
 def verify_citations(
     response: RAGResponse,
     chunks: list[RetrievedChunk],
@@ -175,11 +221,13 @@ def run_rag(
         raise ValueError("run_rag requires a non-empty question")
 
     total_started = perf_counter()
+    retrieval_trace = trace if trace is not None else {}
     chunks = retrieve_for_question(
         question=question,
         history=history,
-        trace=trace,
+        trace=retrieval_trace,
     )
+    search_query = str(retrieval_trace.get("search_query", question))
 
     relevant_chunks = select_relevant(chunks)
     if trace is not None:
@@ -202,6 +250,14 @@ def run_rag(
                 perf_counter() - total_started,
                 4,
             )
+        _log_rag_result(
+            question=question,
+            search_query=search_query,
+            chunks=chunks,
+            relevant_chunks=relevant_chunks,
+            response=response,
+            retrieval_gate_passed=False,
+        )
         return response
 
     context = format_context(relevant_chunks)
@@ -236,6 +292,14 @@ def run_rag(
                     "total": round(perf_counter() - total_started, 4),
                 }
             )
+        _log_rag_result(
+            question=question,
+            search_query=search_query,
+            chunks=chunks,
+            relevant_chunks=relevant_chunks,
+            response=response,
+            retrieval_gate_passed=True,
+        )
         return response
 
     generation_seconds = perf_counter() - generation_started
@@ -248,5 +312,14 @@ def run_rag(
                 "total": round(perf_counter() - total_started, 4),
             }
         )
+
+    _log_rag_result(
+        question=question,
+        search_query=search_query,
+        chunks=chunks,
+        relevant_chunks=relevant_chunks,
+        response=response,
+        retrieval_gate_passed=True,
+    )
 
     return response

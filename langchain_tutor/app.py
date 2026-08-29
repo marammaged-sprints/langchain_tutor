@@ -1,3 +1,5 @@
+import logging
+
 import streamlit as st
 
 from langchain_tutor.models import RAGResponse
@@ -25,6 +27,8 @@ def render_refusal(response: RAGResponse) -> bool:
 
 
 def main() -> None:
+    logging.getLogger("langchain_tutor").setLevel(logging.INFO)
+
     st.set_page_config(
         page_title="Think Python Tutor",
         page_icon="📘",
