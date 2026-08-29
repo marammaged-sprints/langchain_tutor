@@ -118,6 +118,27 @@ Run the complete suite after configuring `GOOGLE_API_KEY`:
 python -m pytest langchain_tutor/tests
 ```
 
+## Golden questions and retrieval calibration
+
+The integration suite includes 10 representative questions the book should
+answer and 5 unsupported questions it should refuse. Run only this behavioral
+benchmark with:
+
+```powershell
+python -m pytest langchain_tutor/tests/test_golden_questions.py -m integration
+```
+
+To inspect the retrieved distance scores and calculate a measured candidate for
+`retrieval_score_threshold`, run:
+
+```powershell
+python -m langchain_tutor.evaluation.calibrate_retrieval
+```
+
+The command reports the current gate's in-scope acceptance and out-of-scope
+refusal counts, then recommends the threshold with the best balanced accuracy
+for the current `min_top_k`. Lower Chroma distance scores are more relevant.
+
 ## Inspect document chunks
 
 The chunk inspection utility is kept outside the application package. Run it
