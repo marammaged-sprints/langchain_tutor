@@ -75,6 +75,7 @@ def test_prepares_retrieval_evidence_and_timing():
                         "query_type": "definition",
                         "grounded": True,
                         "citations": [],
+                        "dropped_citation_count": 2,
                         "trace": {
                             "search_query": "Python variable definition",
                             "retrieved_chunks": [{"chunk_id": "c1"}],
@@ -96,6 +97,8 @@ def test_prepares_retrieval_evidence_and_timing():
     assert records[0]["response_time_source"] == (
         "trace.timings_seconds.total"
     )
+    assert records[0]["dropped_citation_count"] == 2
+    assert records[0]["answer_displayed"] is True
 
 
 def test_response_time_scoring_boundaries():
@@ -162,6 +165,8 @@ def test_ragas_metrics_are_used_and_rubric_scores_are_normalized():
     assert result["faithfulness"]["score"] == 0.9
     assert result["answer_completeness"]["score"] == 0.75
     assert result["response_time"]["score"] == 0.75
+    assert result["dropped_citation_count"] is None
+    assert result["answer_displayed"] is False
     assert result["behavior_passed"] is True
 
 

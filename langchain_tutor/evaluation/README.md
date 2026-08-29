@@ -20,11 +20,17 @@ contain a first question and a conversational follow-up. It checkpoints the JSON
 after every numbered case and stores:
 
 - question, history, and answer;
-- grounding decision, refusal reason, and verified citations;
+- grounding decision, refusal reason, verified citations, and the number of
+  citations dropped by verification;
 - rewritten search query;
 - all retrieved chunks and similarity scores;
 - chunks that pass the relevance threshold;
 - query-rewrite, retrieval, generation, and total response time.
+
+Legacy answer files created before `dropped_citation_count` was added retain a
+null value for that field; they cannot reliably distinguish omitted citations
+from citations removed during verification. Regenerate with `--fresh` to
+capture the distinction.
 
 Without `--fresh`, successful cases already in the output file are preserved and
 only missing or failed cases are run again.

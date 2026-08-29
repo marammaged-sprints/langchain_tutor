@@ -124,6 +124,10 @@ def _rag_outcome(
         return "answered"
     if response.query_type == "out_of_scope":
         return "model_refused"
+    if response.dropped_citation_count:
+        return "invalid_citations"
+    if not response.citations:
+        return "uncited"
     return "unverified"
 
 
@@ -143,7 +147,7 @@ def _log_rag_result(
     logger.info(
         "rag question=%r rewritten=%r retrieved=%d relevant=%d "
         "min_top_k=%d threshold=%.3f scores=%s citations=%d "
-        "grounded=%s outcome=%s refusal_reason=%r",
+        "dropped_citations=%d grounded=%s outcome=%s refusal_reason=%r",
         question,
         search_query,
         len(chunks),
@@ -152,6 +156,7 @@ def _log_rag_result(
         settings.retrieval_score_threshold,
         scores,
         len(response.citations),
+        response.dropped_citation_count,
         response.grounded,
         _rag_outcome(response, retrieval_gate_passed),
         response.refusal_reason,
@@ -194,6 +199,7 @@ def verify_citations(
         verified_citations.append(citation)
 
     response.citations = verified_citations
+    response.dropped_citation_count = len(dropped_citations)
 
     response.retrieved_chunks = len(chunks)
 

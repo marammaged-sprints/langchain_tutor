@@ -246,8 +246,14 @@ def prepare_records(
                     "answer": turn.get("answer") or "",
                     "query_type": turn.get("query_type"),
                     "grounded": bool(turn.get("grounded")),
+                    "answer_displayed": bool(
+                        turn.get("answer_displayed", turn.get("grounded"))
+                    ),
                     "refusal_reason": turn.get("refusal_reason"),
                     "citations": turn.get("citations", []),
+                    "dropped_citation_count": turn.get(
+                        "dropped_citation_count"
+                    ),
                     "search_query": trace.get("search_query"),
                     "retrieved_contexts": contexts,
                     "context_source": context_source,
@@ -457,9 +463,11 @@ async def evaluate_record_async(
         "turn": record["turn"],
         "category": record["category"],
         "expected_should_answer": record["expected_should_answer"],
+        "answer_displayed": record.get("answer_displayed", False),
         "question": record["question"],
         "context_source": record["context_source"],
         "context_count": len(contexts),
+        "dropped_citation_count": record.get("dropped_citation_count"),
         "retrieval_relevance": {
             "score": round(raw_retrieval, 4),
             "raw_score": round(raw_retrieval, 4),

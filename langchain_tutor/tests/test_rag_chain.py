@@ -4,7 +4,12 @@ import pytest
 
 from langchain_tutor import rag_chain
 from langchain_tutor.models import BookCitation, RAGResponse, RetrievedChunk
-from langchain_tutor.rag_chain import get_store, select_relevant, run_rag
+from langchain_tutor.rag_chain import (
+    get_store,
+    run_rag,
+    select_relevant,
+    verify_citations,
+)
 
 
 def test_get_store_builds_or_loads_index(monkeypatch):
@@ -128,7 +133,65 @@ def test_successful_answer_logs_retrieval_diagnostics(monkeypatch, caplog):
     assert "rewritten='python variable'" in message
     assert "retrieved=3 relevant=3" in message
     assert "scores=[0.1, 0.2, 0.3]" in message
-    assert "citations=1 grounded=True outcome=answered" in message
+    assert (
+        "citations=1 dropped_citations=0 grounded=True outcome=answered"
+        in message
+    )
+
+
+def test_verify_citations_marks_omitted_citations_without_drops():
+    chunks = [
+        RetrievedChunk(
+            chunk_id="c1",
+            content="A dictionary maps keys to values.",
+            source="Think Python",
+            page=10,
+            score=0.1,
+        )
+    ]
+    response = RAGResponse(
+        answer="A dictionary maps keys to values.",
+        query_type="definition",
+        grounded=True,
+        citations=[],
+        retrieved_chunks=0,
+    )
+
+    verified = verify_citations(response, chunks)
+
+    assert verified.grounded is False
+    assert verified.citations == []
+    assert verified.dropped_citation_count == 0
+
+
+def test_verify_citations_counts_dropped_citations():
+    chunks = [
+        RetrievedChunk(
+            chunk_id="c1",
+            content="A dictionary maps keys to values.",
+            source="Think Python",
+            page=10,
+            score=0.1,
+        )
+    ]
+    response = RAGResponse(
+        answer="A dictionary maps keys to values.",
+        query_type="definition",
+        grounded=True,
+        citations=[
+            BookCitation(
+                chunk_id="not-retrieved",
+                excerpt="A dictionary maps keys to values.",
+            )
+        ],
+        retrieved_chunks=0,
+    )
+
+    verified = verify_citations(response, chunks)
+
+    assert verified.grounded is False
+    assert verified.citations == []
+    assert verified.dropped_citation_count == 1
 
 
 @pytest.mark.parametrize(
@@ -137,23 +200,39 @@ def test_successful_answer_logs_retrieval_diagnostics(monkeypatch, caplog):
         "grounded",
         "refusal_reason",
         "retrieval_gate_passed",
+        "dropped_citation_count",
+        "has_citation",
         "expected",
     ),
     [
-        ("definition", True, None, True, "answered"),
-        ("definition", False, None, True, "unverified"),
-        ("out_of_scope", False, None, True, "model_refused"),
+        ("definition", True, None, True, 0, True, "answered"),
+        ("definition", False, None, True, 0, False, "uncited"),
+        (
+            "definition",
+            False,
+            None,
+            True,
+            1,
+            False,
+            "invalid_citations",
+        ),
+        ("definition", False, None, True, 0, True, "unverified"),
+        ("out_of_scope", False, None, True, 0, False, "model_refused"),
         (
             "out_of_scope",
             False,
             "Generation failed.",
             True,
+            0,
+            False,
             "generation_failed",
         ),
         (
             "out_of_scope",
             False,
             "Not enough relevant book context was retrieved.",
+            False,
+            0,
             False,
             "retrieval_refused",
         ),
@@ -164,12 +243,20 @@ def test_rag_outcome_keeps_failure_modes_distinct(
     grounded,
     refusal_reason,
     retrieval_gate_passed,
+    dropped_citation_count,
+    has_citation,
     expected,
 ):
     response = RAGResponse(
         answer="answer",
         query_type=query_type,
         grounded=grounded,
+        citations=(
+            [BookCitation(chunk_id="c1", excerpt="excerpt")]
+            if has_citation
+            else []
+        ),
+        dropped_citation_count=dropped_citation_count,
         retrieved_chunks=0,
         refusal_reason=refusal_reason,
     )

@@ -173,10 +173,14 @@ def evaluate_case(
             break
 
         response_data = response.model_dump(mode="json")
+        answer_displayed = bool(
+            response.query_type != "out_of_scope"
+            and response.refusal_reason != "Generation failed."
+            and response.dropped_citation_count == 0
+            and (response.grounded or not response.citations)
+        )
         actual_should_answer = (
-            response.grounded
-            and response.query_type != "out_of_scope"
-            and not response.refusal_reason
+            answer_displayed
             and not looks_like_refusal(response.answer)
         )
         turns.append(
@@ -184,16 +188,17 @@ def evaluate_case(
                 "turn": turn_number,
                 "question": question,
                 "history": history,
+                "answer_displayed": answer_displayed,
                 "actual_should_answer": actual_should_answer,
                 "trace": trace,
                 **response_data,
             }
         )
 
-        # Match app.py: an ungrounded response is not added as an assistant
-        # message, but the user's preceding question remains in the history.
+        # Match app.py: grounded and uncited answers are displayed and become
+        # conversation history; refusals and invalid-citation answers do not.
         history_lines.append(f"User: {question}")
-        if response.grounded:
+        if answer_displayed:
             history_lines.append(f"Assistant: {response.answer}")
 
     expected_should_answer = case["expected_should_answer"]

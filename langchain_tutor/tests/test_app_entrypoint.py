@@ -40,7 +40,7 @@ def test_out_of_scope_response_displays_the_gate_refusal(monkeypatch):
     assert warning_messages == []
 
 
-def test_ungrounded_in_scope_response_displays_verification_warning(monkeypatch):
+def test_invalid_citations_display_verification_warning(monkeypatch):
     markdown_messages = []
     warning_messages = []
     monkeypatch.setattr(tutor_app.st, "markdown", markdown_messages.append)
@@ -50,6 +50,7 @@ def test_ungrounded_in_scope_response_displays_verification_warning(monkeypatch)
         answer="An answer that could not be verified.",
         query_type="conceptual",
         grounded=False,
+        dropped_citation_count=1,
         retrieved_chunks=3,
         refusal_reason="The answer was not supported by the retrieved context.",
     )
@@ -59,9 +60,33 @@ def test_ungrounded_in_scope_response_displays_verification_warning(monkeypatch)
     assert handled is True
     assert markdown_messages == []
     assert warning_messages == [
-        "I found relevant passages, but I couldn't verify the answer "
-        "against them. Try rephrasing the question."
+        "I couldn't verify this answer against the book because one or "
+        "more citations were invalid. Try rephrasing the question."
     ]
+
+
+def test_uncited_answer_displays_caveat_and_remains_visible(monkeypatch):
+    info_messages = []
+    warning_messages = []
+    monkeypatch.setattr(tutor_app.st, "info", info_messages.append)
+    monkeypatch.setattr(tutor_app.st, "warning", warning_messages.append)
+
+    response = RAGResponse(
+        answer="A correct answer generated from retrieved book context.",
+        query_type="conceptual",
+        grounded=False,
+        citations=[],
+        dropped_citation_count=0,
+        retrieved_chunks=5,
+    )
+
+    handled = tutor_app.render_refusal(response)
+
+    assert handled is False
+    assert info_messages == [
+        "Answer produced from the book, but without specific citations."
+    ]
+    assert warning_messages == []
 
 
 def test_generation_failure_displays_its_own_error(monkeypatch):

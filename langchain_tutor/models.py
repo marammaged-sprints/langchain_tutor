@@ -39,5 +39,6 @@ class RAGResponse(BaseModel):
     query_type: QueryType
     grounded: bool
     citations: List[BookCitation] = Field(default_factory=list)
+    dropped_citation_count: int = Field(default=0, ge=0)
     retrieved_chunks: int
     refusal_reason: Optional[str] = None

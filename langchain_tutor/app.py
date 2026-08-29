@@ -16,6 +16,19 @@ def render_refusal(response: RAGResponse) -> bool:
         st.markdown(response.answer)
         return True
 
+    if response.dropped_citation_count:
+        st.warning(
+            "I couldn't verify this answer against the book because one or "
+            "more citations were invalid. Try rephrasing the question."
+        )
+        return True
+
+    if not response.citations:
+        st.info(
+            "Answer produced from the book, but without specific citations."
+        )
+        return False
+
     if not response.grounded:
         st.warning(
             "I found relevant passages, but I couldn't verify the answer "
